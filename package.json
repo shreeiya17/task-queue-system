@@ -1,0 +1,25 @@
+{
+  "name": "task-queue-system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "worker": "nodemon src/workers/worker.js",
+    "benchmark": "node src/benchmark.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bullmq": "^5.73.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.1",
+    "pg": "^8.20.0",
+    "socket.io": "^4.8.3"
+  }
+}
