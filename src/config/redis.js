@@ -1,13 +1,18 @@
 const { Redis } = require('ioredis');
 
 // ioredis is the Redis client library BullMQ requires
-const connection = new Redis({
+const redisConfig = {
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT) || 6379,
   maxRetriesPerRequest: null,  // REQUIRED by BullMQ — don't skip
-});
+  retryStrategy: (times) => {
+    if (times > 10) return null;
+    return Math.min(times * 200, 2000);
+  },
+};
 
-connection.on('connect', () => console.log('Redis connected'));
-connection.on('error', (err) => console.error('Redis error:', err));
+const connection = new Redis(redisConfig);
+connection.on('connect', () => console.log('[Redis] connected'));
+connection.on('error', (err) => console.error('[Redis] error:', err.message));
 
-module.exports = { connection };
+module.exports = { connection, redisConfig };
