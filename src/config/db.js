@@ -15,31 +15,33 @@ const pool = new Pool({
 // Create the jobs table (run once)
 async function initDB() {
   const client = await pool.connect();
-  try{
-    await pool.query(`
+  try {
+    // use client everywhere — not pool
+    await client.query(`
       CREATE TABLE IF NOT EXISTS jobs (
-        id          VARCHAR(100) PRIMARY KEY,
-        type        VARCHAR(50) NOT NULL,
-        status      VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'active', 'completed', 'failed', 'dead', 'delayed')),
-        priority    INTEGER DEFAULT 5,
-        data        JSONB NOT NULL,
-        attempts    INTEGER DEFAULT 0,
-        max_attempts INTEGER DEFAULT 3,
-        result      JSONB,
-        error       TEXT,
-        error_stack TEXT,
-        progress INTEGER DEFAULT 0,
-        created_at  TIMESTAMPZ DEFAULT NOW(),
-        updated_at  TIMESTAMPZ DEFAULT NOW(),
-        completed_at TIMESTAMPZ,
-        failed_at TIMESTAMPZ
+        id           VARCHAR(100) PRIMARY KEY,
+        type         VARCHAR(50)  NOT NULL,
+        status       VARCHAR(20)  DEFAULT 'waiting'
+                     CHECK (status IN ('waiting','active','completed','failed','dead','delayed')),
+        priority     INTEGER      DEFAULT 5,
+        data         JSONB        NOT NULL,
+        attempts     INTEGER      DEFAULT 0,
+        max_attempts INTEGER      DEFAULT 3,
+        result       JSONB,
+        error        TEXT,
+        error_stack  TEXT,
+        progress     INTEGER      DEFAULT 0,
+        created_at   TIMESTAMPTZ  DEFAULT NOW(),
+        updated_at   TIMESTAMPTZ  DEFAULT NOW(),
+        completed_at TIMESTAMPTZ,
+        failed_at    TIMESTAMPTZ
       )
     `);
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_jobs_status  ON jobs(status);
       CREATE INDEX IF NOT EXISTS idx_jobs_created ON jobs(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_jobs_type    ON jobs(type);
-      `);
+    `);
     await client.query(`
       CREATE TABLE IF NOT EXISTS dlq_jobs (
         id              SERIAL PRIMARY KEY,
@@ -50,14 +52,13 @@ async function initDB() {
         error_stack     TEXT,
         attempts        INTEGER,
         failed_at       TIMESTAMPTZ DEFAULT NOW(),
-        replayed        BOOLEAN DEFAULT FALSE,
+        replayed        BOOLEAN     DEFAULT FALSE,
         replayed_at     TIMESTAMPTZ
       )
-    `)
+    `);
     console.log('[DB] Tables initialised');
-  }
-  finally{
-    client.release();
+  } finally {
+    client.release(); // always release
   }
 }
 
