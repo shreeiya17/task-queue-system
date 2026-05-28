@@ -21,6 +21,7 @@ async function mainProcessor(job) {
     switch (job.name) {
         case 'email':  return await processEmailJob(job);
         case 'report': return await processReportJob(job);
+        case 'test': return await processTestJob(job);
         default: throw Object.assign(new Error(`Unknown type: ${job.name}`), {failParent:true});
     }
 }
@@ -81,3 +82,12 @@ async function moveToDLQ(job, error) {
 }
 process.on('SIGTERM', async () => { await worker.close(); process.exit(0); });
 console.log('[Worker] Started — concurrency:5');
+
+const { getQueueStats } = require('../queues/taskQueue');
+
+setInterval(async () => {
+    if (global.io && global.io.sockets.sockets.size > 0) {
+        const stats = await getQueueStats();
+        global.io.emit('queue:stats', stats);
+    }
+}, 2000);
