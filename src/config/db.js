@@ -1,16 +1,27 @@
 const { Pool } = require('pg');
 
 // Pool = a group of reusable DB connections (efficient)
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  max: 10,
-  idleTimeoutMillis: 3000,
-  connectionTimeoutMillis: 2000
-});
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 10,
+      idleTimeoutMillis: 3000,
+      connectionTimeoutMillis: 2000
+    })
+  : new Pool({
+      host: process.env.DB_HOST || '127.0.0.1',
+      port: process.env.DB_PORT || 5432,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      max: 10,
+      idleTimeoutMillis: 3000,
+      connectionTimeoutMillis: 2000
+    });
+
+    pool.on('error', (err) => {
+      console.error('Unexpected error on idle database client', err.message);
+    });
 
 // Create the jobs table (run once)
 async function initDB() {
