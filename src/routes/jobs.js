@@ -43,7 +43,24 @@ router.post('/', async (req, res) => {
 // it treats "stats" as an id and this route never runs.
 router.get('/stats', async (_, res) => {
   try {
-    res.json(await getQueueStats());
+    const { rows } = await query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'waiting')   AS waiting,
+        COUNT(*) FILTER (WHERE status = 'active')    AS active,
+        COUNT(*) FILTER (WHERE status = 'completed') AS completed,
+        COUNT(*) FILTER (WHERE status = 'failed')    AS failed,
+        COUNT(*) FILTER (WHERE status = 'delayed')   AS delayed,
+        COUNT(*) FILTER (WHERE status = 'dead')      AS dlq
+      FROM jobs
+    `);
+    res.json({
+      waiting:   parseInt(rows[0].waiting),
+      active:    parseInt(rows[0].active),
+      completed: parseInt(rows[0].completed),
+      failed:    parseInt(rows[0].failed),
+      delayed:   parseInt(rows[0].delayed),
+      dlq:       parseInt(rows[0].dlq),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -72,11 +89,26 @@ router.post('/dlq/:id/replay', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { status, type, page = 1, limit = 20 } = req.query;
+
+    // DLQ jobs live in a separate table — handle separately
+    if (status === 'dlq') {
+      const { rows } = await query(
+        `SELECT id, type, 'dlq' AS status, data, created_at,
+                NULL AS updated_at, NULL AS attempts, NULL AS max_attempts
+         FROM dlq_jobs
+         ORDER BY created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [parseInt(limit), (parseInt(page) - 1) * parseInt(limit)]
+      );
+      return res.json({ jobs: rows, page: parseInt(page), limit: parseInt(limit) });
+    }
+
+    // All other statuses — query jobs table as before
     const params = [];
     let where = 'WHERE 1=1';
 
     if (status) { params.push(status); where += ` AND status = $${params.length}`; }
-    if (type)   { params.push(type);   where += ` AND type = $${params.length}`; }
+    if (type)   { params.push(type);   where += ` AND type   = $${params.length}`; }
 
     params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
 
@@ -86,6 +118,7 @@ router.get('/', async (req, res) => {
       params
     );
     res.json({ jobs: rows, page: parseInt(page), limit: parseInt(limit) });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
