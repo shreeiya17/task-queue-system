@@ -8,13 +8,23 @@ const jobRoutes  = require('./routes/jobs');
 
 const app        = express();
 const httpServer = http.createServer(app);
+
+// ── THE CORS FIX FOR SOCKET.IO ────────────────────────────────────
 const io         = new Server(httpServer, {
-  cors: { origin: ['http://localhost:5173'], methods: ['GET','POST'] }
+  cors: { 
+    origin: ['http://localhost:5173', 'https://task-queue-frontend.vercel.app'], 
+    methods: ['GET','POST'] 
+  }
 });
 
 global.io = io;
 app.set('io', io);
-app.use(cors());
+
+// ── THE CORS FIX FOR EXPRESS HTTP API ──────────────────────────────
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://task-queue-frontend.vercel.app']
+}));
+
 app.use(express.json({ limit: '1mb' }));
 app.use((req, res, next) => {
   const t = Date.now();
