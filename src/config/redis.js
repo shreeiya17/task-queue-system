@@ -11,7 +11,7 @@ const redisConfig = {
   },
 };
 
-const connection = new Redis(redisConfig);
+const connection = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379', redisConfig);
 connection.on('connect', () => console.log('[Redis] connected'));
 connection.on('error', (err) => console.error('[Redis] error:', err.message));
 
