@@ -9,21 +9,31 @@ const jobRoutes  = require('./routes/jobs');
 const app        = express();
 const httpServer = http.createServer(app);
 
-// ── THE CORS FIX FOR SOCKET.IO ────────────────────────────────────
-const io         = new Server(httpServer, {
-  cors: { 
-    origin: ['http://localhost:5173', 'https://task-queue-frontend.vercel.app'], 
-    methods: ['GET','POST'] 
+// ── CORS ──────────────────────────────────────────────────────────
+// Allows localhost in dev and ANY *.vercel.app URL in production.
+// This is needed because Vercel generates a unique preview URL for
+// every deployment — a hardcoded single URL will block all of them.
+const allowedOrigin = (origin, callback) => {
+  if (
+    !origin ||                           // server-to-server / curl / Postman
+    origin === 'http://localhost:5173' ||
+    origin === 'http://localhost:3000' ||
+    origin.endsWith('.vercel.app')       // covers production + all preview deploys
+  ) {
+    callback(null, true);
+  } else {
+    callback(new Error(`CORS blocked: ${origin}`));
   }
+};
+
+const io = new Server(httpServer, {
+  cors: { origin: allowedOrigin, methods: ['GET', 'POST'] }
 });
 
 global.io = io;
 app.set('io', io);
 
-// ── THE CORS FIX FOR EXPRESS HTTP API ──────────────────────────────
-app.use(cors({
-  origin: ['http://localhost:5173', 'https://task-queue-frontend.vercel.app']
-}));
+app.use(cors({ origin: allowedOrigin }));
 
 app.use(express.json({ limit: '1mb' }));
 app.use((req, res, next) => {
@@ -45,17 +55,17 @@ io.on('connection', socket => {
   );
 });
 
-// ── THE FIX: all broadcasting lives here in server.js ─────────────
+// ── Broadcast loop ────────────────────────────────────────────────
 // worker.js runs in a separate process and cannot access global.io.
 // server.js polls PostgreSQL every second and broadcasts everything.
 
-let lastJobUpdates = new Map(); // track what we already broadcast
+let lastJobUpdates = new Map();
 
 setInterval(async () => {
   if (io.sockets.sockets.size === 0) return;
 
   try {
-    // 1. Broadcast live stats from PostgreSQL (accurate count)
+    // 1. Broadcast live stats from PostgreSQL (single source of truth)
     const { rows: s } = await query(`
       SELECT
         COUNT(*) FILTER (WHERE status = 'waiting')   AS waiting,
@@ -87,7 +97,6 @@ setInterval(async () => {
       const key  = job.id;
       const prev = lastJobUpdates.get(key);
 
-      // only emit if status changed since last broadcast
       if (prev === job.status) continue;
       lastJobUpdates.set(key, job.status);
 
@@ -108,13 +117,12 @@ setInterval(async () => {
       }
     }
 
-    // Clean up old entries (keep map small)
     if (lastJobUpdates.size > 500) lastJobUpdates.clear();
 
   } catch (err) {
     console.error('[Server] Broadcast error:', err.message);
   }
-}, 1000); // every 1 second — fast enough to catch job transitions
+}, 1000);
 
 async function start() {
   await initDB();
