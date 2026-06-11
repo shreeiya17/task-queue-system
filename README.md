@@ -2,7 +2,9 @@
 
 A production-grade distributed job processing system built with Node.js, BullMQ, Redis, and PostgreSQL. Features priority queues, exponential backoff retry, dead letter queue, idempotent deduplication, and a real-time monitoring dashboard.
 
-**Status:** In Progress — core system complete, deployment in progress
+**Status:** Production Ready — Deployed on Railway + Vercel
+
+[Live Dashboard](https://task-queue-frontend.vercel.app) | [Frontend Repo](https://github.com/shreeiya17/task-queue-frontend)
 
 ---
 
@@ -126,7 +128,7 @@ task-queue-system/
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/task-queue-system.git
+git clone https://github.com/shreeiya17/task-queue-system.git
 cd task-queue-system
 
 # Install dependencies
@@ -267,29 +269,3 @@ Throughput scaled near-linearly from 1 to 50 workers. Beyond 50, each additional
 - **Priority scheduling** — Redis Sorted Sets for O(log N) priority operations
 - **Real-time observability** — WebSocket push for live system monitoring
 - **Horizontal worker scaling** — multiple worker instances share one Redis queue
-
----
-
-## Interview Talking Points
-
-This project was built to demonstrate production backend engineering concepts. Every feature maps to a real system design question:
-
-- *"What happens if a worker crashes mid-job?"* → Redis lock TTL + stall detection + automatic requeue
-- *"How do you prevent duplicate job execution?"* → MD5 idempotency keys + ON CONFLICT DO NOTHING
-- *"Why not just use a database as a queue?"* → Atomic Redis operations vs disk I/O overhead trade-off
-- *"How would you scale to 10M jobs/day?"* → Horizontal worker scaling + Redis Cluster + PostgreSQL partitioning
-- *"What is a Dead Letter Queue?"* → Poison pill isolation + manual replay API for operator recovery
-
----
-
-## Author
-
-**Shreeiya Trivedi** — B.Tech CS (Data Science), AKGEC, Ghaziabad
-
-- GitHub: [github.com/shreeiyatrivedi](https://github.com/shreeiya17)
-- LinkedIn: [linkedin.com/in/shreeiyatrivedi](https://www.linkedin.com/in/shreeiya-trivedi-b8a45225b/)
-- LeetCode: 1672 | CodeChef: 1609 (3★) | Codeforces: 1216
-
----
-
-*Built as a demonstration of distributed systems concepts for software engineering internship applications — 2026*
