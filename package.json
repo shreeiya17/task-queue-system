@@ -5,9 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.js",
-    "worker": "nodemon --watch src/workers --watch src/processors --watch src/config src/workers/worker.js",
+    "worker": "node src/workers/worker.js",
+    "worker:dev": "nodemon --watch src/workers --watch src/processors --watch src/config src/workers/worker.js",
+    "start:all": "node src/server.js & node src/workers/worker.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "benchmark": "node src/benchmark.js"
   },
   "keywords": [],
