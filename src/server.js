@@ -13,12 +13,15 @@ const httpServer = http.createServer(app);
 // Allows localhost in dev and ANY *.vercel.app URL in production.
 // This is needed because Vercel generates a unique preview URL for
 // every deployment — a hardcoded single URL will block all of them.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
+
 const allowedOrigin = (origin, callback) => {
   if (
-    !origin ||                           // server-to-server / curl / Postman
+    !origin ||
     origin === 'http://localhost:5173' ||
     origin === 'http://localhost:3000' ||
-    origin.endsWith('.vercel.app')       // covers production + all preview deploys
+    origin.endsWith('.vercel.app') ||
+    ALLOWED_ORIGINS.includes(origin)
   ) {
     callback(null, true);
   } else {
