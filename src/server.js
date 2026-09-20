@@ -130,7 +130,7 @@ setInterval(async () => {
 async function start() {
   await initDB();
   const PORT = process.env.PORT || 3000;
-  httpServer.listen(PORT, () => {
+  httpServer.listen(PORT,'0.0.0.0', () => {
     console.log(`[Server] http://localhost:${PORT}`);
     console.log('[Server] Start worker: npm run worker');
   });
